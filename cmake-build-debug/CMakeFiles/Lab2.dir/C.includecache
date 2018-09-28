@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/cygdrive/c/Users/Arkan Abuyazid/Documents/UT-Fa18/EE460N/Lab2/main.c
+assert.h
+-
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+

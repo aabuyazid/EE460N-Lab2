@@ -409,6 +409,7 @@ System_Latches process_XOR(int instruction);
 System_Latches process_SHF(int instruction);
 System_Latches process_STB(int instruction);
 System_Latches process_LDB(int instruction);
+System_Latches setCC(System_Latches update, int Source1Reg);
 void process_instruction(){
     /*  function: process_instruction
      *
@@ -443,28 +444,7 @@ System_Latches process_ADD(int instruction){
                 temp.REGS[DestReg] = temp.REGS[Source1Reg] + (immediate - 32) ;
             }
     }
-    //PC updated in fetch
-    //this could be a subfunction below
-    int checkBITS = (temp.REGS[DestReg] & 0x0FFFF);
-    int negPos = (checkBITS & 0x08000) >> 15;
-    if(negPos == 1){
-        temp.N = 1;
-        temp.P = 0;
-        temp.Z = 0;
-    }
-    else{
-        if(checkBITS == 0){
-            temp.N = 0;
-            temp.P = 0;
-            temp.Z = 1;
-        }
-        else{
-            temp.N = 0;
-            temp.P = 1;
-            temp.Z = 0;
-        }
-    }
-    return temp;
+    temp = setCC(temp, Source1Reg);
 }
 
 System_Latches process_AND(int instruction){
@@ -489,27 +469,7 @@ System_Latches process_AND(int instruction){
         immediate &= 0x0FFFF;
         temp.REGS[DestReg] = temp.REGS[Source1Reg] | immediate;
     }
-    //PC updated in fetch
-    //this could be a subfunction below
-    int checkBITS = (temp.REGS[DestReg] & 0x0FFFF);
-    int negPos = (checkBITS & 0x08000) >> 15;
-    if(negPos == 1){
-        temp.N = 1;
-        temp.P = 0;
-        temp.Z = 0;
-    }
-    else{
-        if(checkBITS == 0){
-            temp.N = 0;
-            temp.P = 0;
-            temp.Z = 1;
-        }
-        else{
-            temp.N = 0;
-            temp.P = 1;
-            temp.Z = 0;
-        }
-    }
+    temp = setCC(temp, Source1Reg);
     return temp;
 }
 
@@ -535,27 +495,7 @@ System_Latches process_XOR(int instruction){
         immediate &= 0x0FFFF;
         temp.REGS[DestReg] = temp.REGS[Source1Reg] ^ immediate;
     }
-    //PC updated in fetch
-    //this could be a subfunction below
-    int checkBITS = (temp.REGS[DestReg] & 0x0FFFF);
-    int negPos = (checkBITS & 0x08000) >> 15;
-    if(negPos == 1){
-        temp.N = 1;
-        temp.P = 0;
-        temp.Z = 0;
-    }
-    else{
-        if(checkBITS == 0){
-            temp.N = 0;
-            temp.P = 0;
-            temp.Z = 1;
-        }
-        else{
-            temp.N = 0;
-            temp.P = 1;
-            temp.Z = 0;
-        }
-    }
+    temp = setCC(temp, Source1Reg);
     return temp;
 }
 
@@ -592,27 +532,7 @@ System_Latches process_SHF(int instruction){
             temp.REGS[DestReg] = tempReg;
         }
     }
-    //PC updated in fetch
-    //this could be a subfunction below
-    int checkBITS = (temp.REGS[DestReg] & 0x0FFFF);
-    int negPos = (checkBITS & 0x08000) >> 15;
-    if(negPos == 1){
-        temp.N = 1;
-        temp.P = 0;
-        temp.Z = 0;
-    }
-    else{
-        if(checkBITS == 0){
-            temp.N = 0;
-            temp.P = 0;
-            temp.Z = 1;
-        }
-        else{
-            temp.N = 0;
-            temp.P = 1;
-            temp.Z = 0;
-        }
-    }
+    temp = setCC(temp, Source1Reg);
     return temp;
 }
 
@@ -669,24 +589,29 @@ System_Latches process_LDB(int instruction){
             temp.REGS[Source1Reg] = tempMem | 0x0FF00;
         }
     }
-    int checkBITS = (temp.REGS[Source1Reg] & 0x0FFFF);
+    temp = setCC(temp, Source1Reg);
+    return temp;
+}
+
+System_Latches setCC(System_Latches update, int Source1Reg){
+    int checkBITS = (update.REGS[Source1Reg] & 0x0FFFF);
     int negPos = (checkBITS & 0x08000) >> 15;
     if(negPos == 1){
-        temp.N = 1;
-        temp.P = 0;
-        temp.Z = 0;
+        update.N = 1;
+        update.P = 0;
+        update.Z = 0;
     }
     else{
         if(checkBITS == 0){
-            temp.N = 0;
-            temp.P = 0;
-            temp.Z = 1;
+            update.N = 0;
+            update.P = 0;
+            update.Z = 1;
         }
         else{
-            temp.N = 0;
-            temp.P = 1;
-            temp.Z = 0;
+            update.N = 0;
+            update.P = 1;
+            update.Z = 0;
         }
     }
-    return temp;
+    return update;
 }

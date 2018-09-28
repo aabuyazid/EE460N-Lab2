@@ -1,9 +1,8 @@
 /*
-
-    Name 1:
-    Name 2:
-    UTEID 1:
-    UTEID 2:
+    Name 1: Arkan Abuyazid
+    Name 2: Michael Hernandez
+    UTEID 1: ata757
+    UTEID 2: moh363
 */
 
 /***************************************************************/
@@ -401,6 +400,8 @@ int main(int argc, char *argv[]) {
 
    Begin your code here 	  			       */
 
+
+
 /***************************************************************/
 
 System_Latches process_ADD(int instruction);
@@ -410,17 +411,6 @@ System_Latches process_SHF(int instruction);
 System_Latches process_STB(int instruction);
 System_Latches process_LDB(int instruction);
 System_Latches setCC(System_Latches update, int Source1Reg);
-void process_instruction(){
-    /*  function: process_instruction
-     *
-     *    Process one instruction at a time
-     *       -Fetch one instruction
-     *       -Decode
-     *       -Execute
-     *       -Update NEXT_LATCHES
-     */
-
-}
 
 //Do we treat them as unsigned or signed int?
 //Do we read in PC, go to that memory address, and then update the conditions?
@@ -615,3 +605,134 @@ System_Latches setCC(System_Latches update, int Source1Reg){
     }
     return update;
 }
+
+
+System_Latches process_STW(int instruction) {
+    System_Latches next_latch = CURRENT_LATCHES;
+    int SR = (instruction & 0x0E00) >> 9;
+    int BaseR = (instruction & 0x01C0) >> 6;
+    int offset6 = instruction & 0x003F;
+    if(offset6 & 0x0020) offset6 += 0xFFC0;
+    offset6 <<= 1;
+    int SR_value = CURRENT_LATCHES.REGS[SR];
+    int address_store = CURRENT_LATCHES.REGS[BaseR];
+    int16_t low_byte = SR_value & 0x00FF;
+    int16_t high_byte = (SR_value & 0xFF00) >> 8;
+
+    MEMORY[address_store+offset6][0] = low_byte;
+    MEMORY[address_store+offset6][1] = high_byte;
+
+    return next_latch;
+}
+
+System_Latches process_LDW(int instruction) {
+    System_Latches next_latch = CURRENT_LATCHES;
+    int DR = (instruction & 0x0E00) >> 9;
+    int BaseR = (instruction & 0x01C0) >> 6;
+    int offset6 = instruction & 0x003F;
+    if(offset6 & 0x0020) offset6 += 0xFFC0;
+    offset6 <<= 1;
+    int address_load = CURRENT_LATCHES.REGS[BaseR];
+    int low_byte = MEMORY[address_load+offset6][0];
+    int high_byte = MEMORY[address_load+offset6][1];
+    int16_t DR_value = Low16bits(high_byte << 8) + low_byte;
+
+    next_latch.REGS[DR] = DR_value;
+
+    return next_latch;
+}
+
+System_Latches process_TRAP(int instruction) {
+    System_Latches next_latch = CURRENT_LATCHES;
+    next_latch.PC = instruction & 0x00FF;
+    return next_latch;
+}
+
+System_Latches process_JMP(int instruction) {
+    System_Latches next_latch = CURRENT_LATCHES;
+    int BaseR = (instruction & 0x01C0) >> 6;
+    int low_byte = MEMORY[BaseR][0];
+    int high_byte = MEMORY[BaseR][1];
+    int16_t newPC = (high_byte >> 8) + low_byte;
+    next_latch.PC = newPC;
+
+    return next_latch;
+}
+
+System_Latches process_JSR(int instruction) {
+    System_Latches next_latch = CURRENT_LATCHES;
+    int offset_flag = instruction & 0x0800;
+    if(offset_flag) {
+        int16_t PCoffset11 = (instruction & 0x07FF);
+        if(PCoffset11 & 0x0400) PCoffset11 += 0xF800;
+        PCoffset11 <<= 1;
+        next_latch.PC += PCoffset11;
+    }
+    else {
+        int BaseR = (instruction & 0x01C0) >> 6;
+        next_latch.PC = CURRENT_LATCHES.REGS[BaseR];
+    }
+    return next_latch;
+}
+
+System_Latches process_LEA(int instruction) {
+    System_Latches next_latch = CURRENT_LATCHES;
+    int DR = (instruction & 0x0E00) >> 9;
+    int16_t PCoffset9 = (instruction & 0x01FF);
+    if(PCoffset9 & 0x0100) PCoffset9 += 0xFE00;
+    PCoffset9 <<= 1;
+    next_latch.REGS[DR] = next_latch.PC + PCoffset9;
+    return next_latch;
+
+}
+
+System_Latches process_BR(int instruction) {
+
+    System_Latches next_latch = CURRENT_LATCHES;
+    int BR_CC = (instruction & 0x0E00) >> 9;
+    int Curr_CC = (CURRENT_LATCHES.N << 2) +
+            (CURRENT_LATCHES.Z << 1) + (CURRENT_LATCHES.P);
+    int16_t PCoffset9 = (instruction & 0x01FF);
+    if(PCoffset9 & 0x0100) PCoffset9 += 0xFE00;
+    PCoffset9 <<= 1;
+    if(BR_CC & Curr_CC) next_latch.PC += PCoffset9;
+    return next_latch;
+
+}
+
+System_Latches process_RTI(int instruction) {
+    return CURRENT_LATCHES;
+}
+System_Latches process_notused(int instruction) {
+    return CURRENT_LATCHES;
+}
+
+
+System_Latches (*pOpcode_Table[16])(int) = {
+        process_BR, process_ADD, process_LDB, process_STB,
+        process_JSR, process_AND, process_LDW, process_STW,
+        process_RTI, process_XOR, process_notused, process_notused,
+        process_JMP, process_SHF, process_LEA, process_TRAP
+        };
+
+int Fetch_Instruction(void) {
+    int16_t high_byte = MEMORY[CURRENT_LATCHES.PC][1];
+    int16_t low_byte = MEMORY[CURRENT_LATCHES.PC][1];
+    int instruction = Low16bits(high_byte << 8) + low_byte;
+    CURRENT_LATCHES.PC += 2;
+    return instruction;
+}
+
+void process_instruction(){
+    /*  function: process_instruction
+     *
+     *    Process one instruction at a time
+     *       -Fetch one instruction
+     *       -Decode
+     *       -Execute
+     *       -Update NEXT_LATCHES
+     */
+    int instruction = Fetch_Instruction();
+    NEXT_LATCHES = pOpcode_Table[instruction >> 12](instruction);
+}
+

@@ -1,0 +1,17 @@
+.ORIG x3000				
+LEA R7, LOAD;
+LDW R1, R7, #0;
+LDW R2, R7, #1;
+RSHFL R3,R1, #12;
+RSHFA R4, R1, #12;
+LSHF  R5, R2, #12;
+LDW R1, R7, #2;
+LDW R1, R1, #0;
+ STW R3, R1, #0;
+STW R4, R1, #1;
+STW R5, R1, #2;
+HALT	      ;
+LOAD .FILL x0007;
+.FILL xE000;
+.FILL x4544
+.END

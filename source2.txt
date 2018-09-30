@@ -1,0 +1,48 @@
+.ORIG x3000   			;Tests JSRs
+	
+AND R7, R7, #0			;
+BRz CODE				;x3000
+	.FILL	 x1234			;
+	.FILL	 x5678			;
+LABEL2	.FILL	 x9ABC			;
+	.FILL	 xDEF0			;
+CODE	AND R1, R1, #0			;
+NOP					;
+NOP					;
+ADD R1, R1, #5				;
+BRp	LABEL3
+NOP					;
+NOP					;
+mini2
+	AND r1, r1, #-5			;
+	ADD r1, r1, #7			;
+	RET				;
+NOP					;
+LABEL3 	LEA R3, LABEL2			;
+	LDW r1, r3, #0			;
+	LDW r2, r3, #1			;
+	brN	LABEL4			;
+	nop				;
+	nop				;
+	nop				;
+LABEL4	LDW r4, r3, #-1			;
+	LDW R5, R3, #-2			;
+	JSR mini			;
+	JSR mini2			; 
+	AND R0, R0, #0			;
+	ADD r2, r3, r5			;
+
+
+DONE	TRAP x25		;
+
+mini	
+	ADD R0, R0, #5		;
+	RSHFL R0, R0, #10	;
+	ret			;
+TEN	.FILL x000A		;
+
+.FILL    x80F6			;
+.FILL	 x0ED1			;
+.FILL	 x57AE			;
+.FILL	 xBCDE			;
+	.END			;

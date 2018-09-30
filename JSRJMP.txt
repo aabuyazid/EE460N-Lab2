@@ -1,0 +1,37 @@
+.ORIG x3000   				;Tests JSRs
+	
+
+	BR	First			;Make sure R7
+	NOP				;changes
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+THREE	LEA 	R7, DONE		;
+	JSSR	R7			;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+First	LEA	R0, Second		;
+	JSSR	R0			;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+	NOP				;
+SECOND	LEA 	R1, THREE		;
+	JSSR	R1			;
+	NOP				;
+	NOP				;
+DONE	TRAP x25			;
+	.END				;

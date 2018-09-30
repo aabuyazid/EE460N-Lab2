@@ -1,0 +1,64 @@
+.ORIG x3000			;
+	
+ADD R0, r0, #-5		;3000	
+ADD R1, r1, #5		;3002
+	
+ADD R2, R2, #-7		;3004
+	
+LEA R0, Y		; R0 has 3054
+	
+LDW R1, R0, #0		;
+3008	
+LDW r2, r0, #-1		;
+300A	
+LDW r3, r0, #-2		;
+300C	
+LDW r4, r0, #-3		;
+300E	
+LDB r5, r0, #-4		;
+3010	
+LDB r6, r0, #-5		;
+3012	
+LSHF  r7, r1, r2		;3014
+	
+RSHFL  r5, r5, #4		;
+3016	
+AND R3, r1, r2		;
+3018	
+AND R4, R5, R6		;
+301A	
+STW R1, R0, #0		;
+301C	
+LEA R0, STORE		;
+301E	
+stb r1, r0, #0		;
+3020	
+stb r2, r0, #1		;
+3022	
+stb r3, r0, #2		;
+3024	
+stb r4, r0, #-1		;
+3026
+stb r5, r0, #-2		;
+
+stb r6, r0, #-3		;302A
+
+DONE	TRAP x25		;CThe last executable instruction
+
+TEN	.FILL xBC0A		;EThis is 10 in 2's comp,
+
+STORE	.FILL x4000		;30 
+
+	.FILL x0105		;
+32	
+.FILL X273F		;
+	34
+.FILL x0305		;
+	36
+.FILL x04FF		;
+	
+.FILL xF5FF		;
+	
+Y.FILL x12A7		; 
+	
+.END

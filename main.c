@@ -413,135 +413,152 @@ System_Latches setCC(System_Latches update, int Source1Reg);
 
 //Do we treat them as unsigned or signed int?
 //Do we read in PC, go to that memory address, and then update the conditions?
+
+int Sext(int value) {
+    int number = (0x0000FFFF & number);
+    int mask = 0x00008000;
+    if (mask & number) {
+        value += 0xFFFF0000;
+    }
+    return value;
+}
 System_Latches process_ADD(int instruction){
     System_Latches temp = CURRENT_LATCHES;
-    int maskOne = 0x00020;
-    int DestReg = (instruction >> 9) & (0x00007);
-    int Source1Reg = (instruction>>6) & (0x00007);
-    int Source2Reg = (instruction & 0x00007);
-    int immediate = (instruction & (0x0001F)); //Is this fine? I feel like it has
+    int maskOne = 0x0020;
+    int DestReg = (instruction >> 9) & (0x0007);
+    int Source1Reg = (instruction>>6) & (0x0007);
+    int Source2Reg = (instruction & 0x0007);
+    int immediate = (instruction & (0x001F)); //Is this fine? I feel like it has
     //Issues with doing it like this
-    int signMask = 0x00010;
+    int signMask = 0x0010;
     if((maskOne & instruction) == 0){
-        temp.REGS[DestReg] = temp.REGS[Source1Reg] + temp.REGS[Source2Reg];
+        temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) + Sext(temp.REGS[Source2Reg]);
     }
     else{
         if((instruction & signMask) == 0){
-            temp.REGS[DestReg] = temp.REGS[Source1Reg] + immediate;
+            temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) + immediate;
         }
         else{
-            temp.REGS[DestReg] = temp.REGS[Source1Reg] + (immediate - 32) ;
+            temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) + (immediate - 32) ;
         }
     }
     temp = setCC(temp, Source1Reg);
+    temp.REGS[DestReg] = Low16bits(temp.REGS[DestReg]);
+    return temp;
 }
 
 System_Latches process_AND(int instruction){
     System_Latches temp = CURRENT_LATCHES;
-    int maskOne = 0x00020;
-    int DestReg = (instruction >> 9) & (0x00007);
-    int Source1Reg = (instruction>>6) & (0x00007);
-    int Source2Reg = (instruction & 0x00007);
-    int immediate = (instruction & (0x0001F)); //Is this fine? I feel like it has
+    int maskOne = 0x0020;
+    int DestReg = (instruction >> 9) & (0x0007);
+    int Source1Reg = (instruction>>6) & (0x0007);
+    int Source2Reg = (instruction & 0x0007);
+    int immediate = (instruction & (0x001F)); //Is this fine? I feel like it has
     //Issues with doing it like this
-    int signMask = 0x00010;
+    int signMask = 0x0010;
     if((maskOne & instruction) == 0){
-        temp.REGS[DestReg] = temp.REGS[Source1Reg] | temp.REGS[Source2Reg];
+        temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) & Sext(temp.REGS[Source2Reg]);
     }
     else{
         if((signMask & instruction) == 0){
-            immediate &= 0x0001F;
+            immediate &= 0x001F;
         }
         else{
-            immediate |= 0xFFFE0;
+            immediate |= 0xFFFFFFE0;
         }
-        immediate &= 0x0FFFF;
-        temp.REGS[DestReg] = temp.REGS[Source1Reg] | immediate;
+        immediate &= 0xFFFF;
+        temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) & immediate;
     }
     temp = setCC(temp, Source1Reg);
+    temp.REGS[DestReg] = Low16bits(temp.REGS[DestReg]);
     return temp;
 }
 
 System_Latches process_XOR(int instruction){
     System_Latches temp = CURRENT_LATCHES;
-    int maskOne = 0x00020;
-    int DestReg = (instruction >> 9) & (0x00007);
-    int Source1Reg = (instruction>>6) & (0x00007);
-    int Source2Reg = (instruction & 0x00007);
-    int immediate = (instruction & (0x0001F)); //Is this fine? I feel like it has
+    int maskOne = 0x0020;
+    int DestReg = (instruction >> 9) & (0x0007);
+    int Source1Reg = (instruction>>6) & (0x0007);
+    int Source2Reg = (instruction & 0x0007);
+    int immediate = (instruction & (0x001F)); //Is this fine? I feel like it has
     //Issues with doing it like this
-    int signMask = 0x00010;
+    int signMask = 0x0010;
     if((maskOne & instruction) == 0){
-        temp.REGS[DestReg] = temp.REGS[Source1Reg] ^ temp.REGS[Source2Reg];
+        temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) ^ Sext(temp.REGS[Source2Reg]);
     }
     else{
         if((signMask & instruction) == 0){
-            immediate &= 0x0001F;
+            immediate &= 0x001F;
         }
         else{
-            immediate |= 0xFFFE0;
+            immediate |= 0xFFFFFFE0;
         }
-        immediate &= 0x0FFFF;
-        temp.REGS[DestReg] = temp.REGS[Source1Reg] ^ immediate;
+        temp.REGS[DestReg] = Sext(temp.REGS[Source1Reg]) ^ immediate;
     }
     temp = setCC(temp, Source1Reg);
+    temp.REGS[DestReg] = Low16bits(temp.REGS[DestReg]);
     return temp;
 }
 
 System_Latches process_SHF(int instruction){
     System_Latches temp = CURRENT_LATCHES;
-    int bitFourMask = 0x00010;
-    int bitFiveMask = 0x00020;
-    int DestReg = (instruction >> 9) & (0x00007);
-    int Source1Reg = (instruction>>6) & (0x00007);
-    int immediate = (instruction & (0x0000F));
+    int bitFourMask = 0x0010;
+    int bitFiveMask = 0x0020;
+    int DestReg = (instruction >> 9) & (0x0007);
+    int Source1Reg = (instruction>>6) & (0x0007);
+    int immediate = (instruction & (0x000F));
     //Make sure it is only 16 bit value
     if((bitFourMask & instruction) == 0){
-        temp.REGS[DestReg] = (temp.REGS[Source1Reg] << immediate) & 0x0FFFF;
+        temp.REGS[DestReg] = (Sext(temp.REGS[Source1Reg]) << immediate);
     }
     else if((bitFiveMask & instruction) == 0){
         temp.REGS[DestReg] = temp.REGS[Source1Reg] >> immediate;
     }
     else{
-        int highBit = (0x08000 & temp.REGS[Source1Reg]);
+        int highBit = (0x8000 & temp.REGS[Source1Reg]);
         if(highBit == 0){
             int tempReg = 0;
+            tempReg = temp.REGS[Source1Reg];
             for(int i = 0; i < immediate; i++){
-                tempReg = temp.REGS[Source1Reg] & 0x07FFF;
-                tempReg = tempReg >> 1;
+                tempReg = (tempReg >> 1);
             }
             temp.REGS[DestReg] = tempReg;
         }
         else{
             int tempReg = 0;
+            tempReg = Sext(temp.REGS[Source1Reg]);
             for(int i = 0; i < immediate; i++){
-                tempReg = temp.REGS[Source1Reg] | 0x08000;
-                tempReg = tempReg >> 1;
+                if(tempReg == 0xFFFF) {
+                    tempReg = 0;
+                    break;
+                }
+                tempReg = (tempReg >> 1) | 0x8000;
             }
             temp.REGS[DestReg] = tempReg;
         }
     }
     temp = setCC(temp, Source1Reg);
+    temp.REGS[DestReg] = Low16bits(temp.REGS[DestReg]);
     return temp;
 }
 
 System_Latches process_STB(int instruction){
     System_Latches temp = CURRENT_LATCHES;
-    int bitFiveMask = 0x00020;
-    int Source1Reg = (instruction >> 9) & (0x00007);
-    int BaseReg = (instruction>>6) & (0x00007);
-    int immediate = (instruction & (0x0003F));
+    int bitFiveMask = 0x0020;
+    int Source1Reg = (instruction >> 9) & (0x0007);
+    int BaseReg = (instruction>>6) & (0x0007);
+    int immediate = (instruction & (0x003F));
     int memLocation = temp.REGS[BaseReg];
     if((bitFiveMask & instruction) == 0){
         int local = memLocation + immediate;
         int highLowByte = local % 2;
-        MEMORY[local / 2][highLowByte] = 0x000FF & temp.REGS[Source1Reg] ;
+        MEMORY[local / 2][highLowByte] = 0x00FF & temp.REGS[Source1Reg] ;
     }
     else{
         immediate -= 64 ;
         int local = memLocation + immediate;
         int highLowByte = local % 2;
-        MEMORY[local / 2][highLowByte] = 0x000FF & temp.REGS[Source1Reg] ;
+        MEMORY[local / 2][highLowByte] = 0x00FF & temp.REGS[Source1Reg] ;
     }
     return temp;
 }
@@ -549,33 +566,33 @@ System_Latches process_STB(int instruction){
 //SetsCC
 System_Latches process_LDB(int instruction){
     System_Latches temp = CURRENT_LATCHES;
-    int bitFiveMask = 0x00020;
-    int signMask = 0x00080;
-    int Source1Reg = (instruction >> 9) & (0x00007);
-    int BaseReg = (instruction>>6) & (0x00007);
-    int immediate = (instruction & (0x0003F));
+    int bitFiveMask = 0x0020;
+    int signMask = 0x0080;
+    int Source1Reg = (instruction >> 9) & (0x0007);
+    int BaseReg = (instruction>>6) & (0x0007);
+    int immediate = instruction & (0x003F);
     int memLocation = temp.REGS[BaseReg];
     if((bitFiveMask & instruction) == 0){
         int local = memLocation + immediate;
         int highLowByte = local % 2;
-        int tempMem = MEMORY[local / 2][highLowByte] & 0x000FF;
-        if(tempMem & signMask == 0){
-            temp.REGS[Source1Reg] = tempMem & 0x000FF;
+        int tempMem = MEMORY[local / 2][highLowByte] & 0x00FF;
+        if((tempMem & signMask) == 0){
+            temp.REGS[Source1Reg] = tempMem & 0x00FF;
         }
         else{
-            temp.REGS[Source1Reg] = tempMem | 0x0FF00;
+            temp.REGS[Source1Reg] = tempMem | 0xFFFFFF00;
         }
     }
     else{
         immediate -= 64 ;
         int local = memLocation + immediate;
         int highLowByte = local % 2;
-        int tempMem = MEMORY[local / 2][highLowByte] & 0x000FF;
-        if(tempMem & signMask == 0){
-            temp.REGS[Source1Reg] = tempMem & 0x000FF;
+        int tempMem = MEMORY[local / 2][highLowByte] & 0x00FF;
+        if((tempMem & signMask) == 0){
+            temp.REGS[Source1Reg] = tempMem & 0x00FF;
         }
         else{
-            temp.REGS[Source1Reg] = tempMem | 0x0FF00;
+            temp.REGS[Source1Reg] = tempMem | 0xFF00;
         }
     }
     temp = setCC(temp, Source1Reg);
@@ -583,8 +600,8 @@ System_Latches process_LDB(int instruction){
 }
 
 System_Latches setCC(System_Latches update, int Source1Reg){
-    int checkBITS = (update.REGS[Source1Reg] & 0x0FFFF);
-    int negPos = (checkBITS & 0x08000) >> 15;
+    int checkBITS = (update.REGS[Source1Reg] & 0xFFFF);
+    int negPos = (checkBITS & 0x8000) >> 15;
     if(negPos == 1){
         update.N = 1;
         update.P = 0;
@@ -610,11 +627,11 @@ System_Latches process_STW(int instruction) {
     int SR = (instruction & 0x0E00) >> 9;
     int BaseR = (instruction & 0x01C0) >> 6;
     int offset6 = instruction & 0x003F;
-    if(offset6 & 0x0020) offset6 += 0xFFC0;
+    if(offset6 & 0x0020) offset6 += 0xFFFFFFC0;
     int SR_value = CURRENT_LATCHES.REGS[SR];
     int address_store = CURRENT_LATCHES.REGS[BaseR];
-    int16_t low_byte = SR_value & 0x00FF;
-    int16_t high_byte = (SR_value & 0xFF00) >> 8;
+    int low_byte = SR_value & 0x00FF;
+    int high_byte = (SR_value & 0xFFFFFF00) >> 8;
 
     MEMORY[address_store+offset6][0] = low_byte;
     MEMORY[address_store+offset6][1] = high_byte;
@@ -628,13 +645,17 @@ System_Latches process_LDW(int instruction) {
     int DR = (instruction & 0x0E00) >> 9;
     int BaseR = (instruction & 0x01C0) >> 6;
     int offset6 = instruction & 0x003F;
-    if(offset6 & 0x0020) offset6 += 0xFFC0;
+    if(offset6 & 0x0020) offset6 += 0xFFFFFFC0;
     int address_load = CURRENT_LATCHES.REGS[BaseR];
-    int low_byte = MEMORY[address_load+offset6][0];
-    int high_byte = MEMORY[address_load+offset6][1];
-    int16_t DR_value = Low16bits(high_byte << 8) + low_byte;
+    int low_byte = MEMORY[(address_load+(offset6<<1) >> 1)][0];
+    int high_byte = MEMORY[(address_load+(offset6<<1) >> 1)][1];
+    int DR_value = Low16bits((high_byte << 8) + low_byte);
 
-    next_latch.REGS[DR] = DR_value;
+    next_latch.REGS[DR] = Sext(DR_value);
+
+    next_latch = setCC(next_latch, DR);
+
+    next_latch.REGS[DR] = Low16bits(next_latch.REGS[DR]);
 
     return next_latch;
 }
@@ -648,35 +669,34 @@ System_Latches process_TRAP(int instruction) {
 System_Latches process_JMP(int instruction) {
     System_Latches next_latch = CURRENT_LATCHES;
     int BaseR = (instruction & 0x01C0) >> 6;
-    int low_byte = MEMORY[BaseR][0];
-    int high_byte = MEMORY[BaseR][1];
-    int16_t newPC = (high_byte >> 8) + low_byte;
-    next_latch.PC = newPC;
+    next_latch.PC = Sext(CURRENT_LATCHES.REGS[BaseR]);
 
     return next_latch;
 }
 
 System_Latches process_JSR(int instruction) {
     System_Latches next_latch = CURRENT_LATCHES;
+    int returnPC = CURRENT_LATCHES.PC;
     int offset_flag = instruction & 0x0800;
     if(offset_flag) {
-        int16_t PCoffset11 = (instruction & 0x07FF);
-        if(PCoffset11 & 0x0400) PCoffset11 += 0xF800;
-        next_latch.PC += PCoffset11;
+        int PCoffset11 = Low16bits(instruction & 0x07FF);
+        if(PCoffset11 & 0x0400) PCoffset11 += 0xFFFFF800;
+        next_latch.PC += PCoffset11<<1;
     }
     else {
         int BaseR = (instruction & 0x01C0) >> 6;
         next_latch.PC = CURRENT_LATCHES.REGS[BaseR];
     }
+    next_latch.REGS[7] = Low16bits(returnPC);
     return next_latch;
 }
 
 System_Latches process_LEA(int instruction) {
     System_Latches next_latch = CURRENT_LATCHES;
     int DR = (instruction & 0x0E00) >> 9;
-    int16_t PCoffset9 = (instruction & 0x01FF);
-    if(PCoffset9 & 0x0100) PCoffset9 += 0xFE00;
-    next_latch.REGS[DR] = next_latch.PC + PCoffset9;
+    int PCoffset9 = Low16bits(instruction & 0x01FF);
+    if(PCoffset9 & 0x0100) PCoffset9 += 0xFFFFFE00;
+    next_latch.REGS[DR] = Low16bits(next_latch.PC + (PCoffset9<<1));
     return next_latch;
 
 }
@@ -684,14 +704,15 @@ System_Latches process_LEA(int instruction) {
 System_Latches process_BR(int instruction) {
 
     System_Latches next_latch = CURRENT_LATCHES;
-    int BR_CC = (instruction & 0x0E00) >> 9;
-    int Curr_CC = (CURRENT_LATCHES.N << 2) +
-            (CURRENT_LATCHES.Z << 1) + (CURRENT_LATCHES.P);
-    int16_t PCoffset9 = (instruction & 0x01FF);
-    if(PCoffset9 & 0x0100) PCoffset9 += 0xFE00;
-    if(BR_CC & Curr_CC) next_latch.PC += PCoffset9;
+    if(instruction) {
+        int BR_CC = (instruction & 0x0E00) >> 9;
+        int Curr_CC = (CURRENT_LATCHES.N << 2) +
+                      (CURRENT_LATCHES.Z << 1) + (CURRENT_LATCHES.P);
+        int PCoffset9 = Low16bits(instruction & 0x01FF);
+        if (PCoffset9 & 0x0100) PCoffset9 += 0xFFFFFE00;
+        if (BR_CC & Curr_CC) next_latch.PC += PCoffset9 << 1;
+    }
     return next_latch;
-
 }
 
 System_Latches process_RTI(int instruction) {
@@ -710,10 +731,10 @@ System_Latches (*pOpcode_Table[16])(int) = {
         };
 
 int Fetch_Instruction(void) {
-    int16_t high_byte = MEMORY[CURRENT_LATCHES.PC][1];
-    int16_t low_byte = MEMORY[CURRENT_LATCHES.PC][1];
+    int16_t high_byte = MEMORY[CURRENT_LATCHES.PC/2][1];
+    int16_t low_byte = MEMORY[CURRENT_LATCHES.PC/2][0];
     int instruction = Low16bits(high_byte << 8) + low_byte;
-    CURRENT_LATCHES.PC++;
+    CURRENT_LATCHES.PC += 2;
     return instruction;
 }
 

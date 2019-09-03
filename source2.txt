@@ -1,12 +1,12 @@
 .ORIG x3000   			;Tests JSRs
 	
 AND R7, R7, #0			;
-BRz CODE				;x3000
+BRz CODE				;x3002
 	.FILL	 x1234			;
 	.FILL	 x5678			;
-LABEL2	.FILL	 x9ABC			;
+LABEL2	.FILL	 x9ABC			;x3008
 	.FILL	 xDEF0			;
-CODE	AND R1, R1, #0			;
+CODE	AND R1, R1, #0			;x300C
 NOP					;
 NOP					;
 ADD R1, R1, #5				;
@@ -29,7 +29,8 @@ LABEL4	LDW r4, r3, #-1			;
 	LDW R5, R3, #-2			;
 	JSR mini			;
 	JSR mini2			; 
-	AND R0, R0, #0			;
+
+	AND R0, R0, #0			;
 	ADD r2, r3, r5			;
 
 
